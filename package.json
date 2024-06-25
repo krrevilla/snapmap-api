@@ -28,6 +28,7 @@
     "@nestjs/passport": "^10.0.3",
     "@nestjs/platform-express": "^10.0.0",
     "aws-sdk": "^2.1635.0",
+    "axios": "^1.7.2",
     "class-validator": "^0.14.1",
     "dotenv": "^16.4.5",
     "jwks-rsa": "^3.1.0",

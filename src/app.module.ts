@@ -3,9 +3,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PhMapModule } from './ph_map/ph_map.module';
 import { AuthModule } from './auth/auth.module';
+import { UserModule } from './user/user.module';
 
 @Module({
-  imports: [PhMapModule, AuthModule],
+  imports: [PhMapModule, AuthModule, UserModule],
   controllers: [AppController],
   providers: [AppService],
 })

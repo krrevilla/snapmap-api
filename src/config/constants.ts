@@ -1,4 +1,6 @@
-import 'dotenv/config';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 type Config = {
   AWS_ACCESS_KEY_ID: string;
