@@ -1,0 +1,36 @@
+{
+    "TableName": "posts",
+    "KeySchema": [
+      {
+        "AttributeName": "id",
+        "KeyType": "HASH"
+      },
+      {
+        "AttributeName": "map_id",
+        "KeyType": "RANGE"
+      },
+      {
+        "AttributeName": "user_id",
+        "KeyType": "RANGE"
+      }
+    ],
+    "AttributeDefinitions": [
+      {
+        "AttributeName": "id",
+        "AttributeType": "S"
+      },
+      {
+        "AttributeName": "map_id",
+        "AttributeType": "S"
+      },
+      {
+        "AttributeName": "user_id",
+        "AttributeType": "S"
+      }
+    ],
+    "ProvisionedThroughput": {
+      "ReadCapacityUnits": 5,
+      "WriteCapacityUnits": 5
+    }
+  }
+  

@@ -1,16 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { type PhMap } from './ph_map.interface';
-import { databaseClient, tableNames } from '../services';
+import { database, Table } from '../services';
+import { PhMap } from './entities/ph_map.entity';
 
 @Injectable()
 export class PhMapService {
-  private readonly tableName = tableNames.phMap;
-
   async findAll(): Promise<PhMap[]> {
-    const result = await databaseClient()
-      .scan({ TableName: this.tableName })
-      .promise();
+    const data = await database.scan<PhMap[]>({ table: Table.phMap });
 
-    return result.Items as PhMap[];
+    return data;
   }
 }
