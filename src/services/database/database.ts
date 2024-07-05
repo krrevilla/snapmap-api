@@ -1,21 +1,13 @@
 import {
-  PutCommand,
-  ScanCommand,
   ScanCommandInput,
-  BatchWriteCommand,
   BatchWriteCommandInput,
   PutCommandInput,
   GetCommandInput,
-  GetCommand,
   UpdateCommandInput,
-  UpdateCommand,
-  DeleteCommand,
   DeleteCommandInput,
   QueryCommandInput,
-  QueryCommand,
 } from '@aws-sdk/lib-dynamodb';
-import { dynamoDBClient } from '../../../dynamodb';
-import { databaseUtils } from './utils';
+import { dynamoDBClient, dynamoDBAdapter } from '../../../dynamodb';
 
 export enum Table {
   phMap = 'ph_map',
@@ -29,8 +21,7 @@ type DatabaseParams = {
 type ScanParams = DatabaseParams;
 const scan = async <T>({ table }: ScanParams): Promise<T> => {
   const commandInput: ScanCommandInput = { TableName: table };
-  const command = new ScanCommand(commandInput);
-  const response = await dynamoDBClient.send(command);
+  const response = await dynamoDBClient.scan(commandInput);
 
   return (response.Items ?? []) as T;
 };
@@ -39,14 +30,13 @@ type QueryParams = DatabaseParams & {
   key: Record<string, any>;
 };
 const query = async <T>({ table, key }: QueryParams): Promise<T> => {
-  const expression = databaseUtils.convertDataToDynamoDBQueryExpression(key);
+  const expression = dynamoDBAdapter.convertDataToDynamoDBQueryExpression(key);
   const commandInput: QueryCommandInput = {
     TableName: table,
     IndexName: 'user_id_index',
     ...expression,
   };
-  const command = new QueryCommand(commandInput);
-  const response = await dynamoDBClient.send(command);
+  const response = await dynamoDBClient.query(commandInput);
 
   return response.Items as T;
 };
@@ -59,9 +49,7 @@ const put = async ({ table, data }: PutParams): Promise<void> => {
     TableName: table,
     Item: data,
   };
-
-  const command = new PutCommand(commandInput);
-  await dynamoDBClient.send(command);
+  await dynamoDBClient.put(commandInput);
 };
 
 type PutBatchParams = DatabaseParams & {
@@ -73,8 +61,7 @@ const putBatch = async ({ table, data }: PutBatchParams): Promise<void> => {
       [table]: data,
     },
   };
-  const command = new BatchWriteCommand(commandInput);
-  await dynamoDBClient.send(command);
+  await dynamoDBClient.batchWrite(commandInput);
 };
 
 type UpdateParams<K> = DatabaseParams & {
@@ -88,15 +75,14 @@ const update = async <T, K>({
 }: UpdateParams<K>): Promise<T> => {
   try {
     const expression =
-      databaseUtils.convertDataToDynamoDBUpdateExpression(data);
+      dynamoDBAdapter.convertDataToDynamoDBUpdateExpression(data);
     const commandInput: UpdateCommandInput = {
       TableName: table,
       Key: key,
       ReturnValues: 'ALL_NEW',
       ...expression,
     };
-    const command = new UpdateCommand(commandInput);
-    const response = await dynamoDBClient.send(command);
+    const response = await dynamoDBClient.update(commandInput);
 
     return response.Attributes as T;
   } catch (error) {
@@ -113,9 +99,7 @@ async function get<T>({ table, key }: GetParams): Promise<T | undefined> {
     TableName: table,
     Key: key,
   };
-
-  const command = new GetCommand(commandInput);
-  const response = await dynamoDBClient.send(command);
+  const response = await dynamoDBClient.get(commandInput);
 
   if (!response.Item) {
     return undefined;
@@ -132,8 +116,7 @@ async function remove({ table, key }: RemoveParams): Promise<void> {
     TableName: table,
     Key: key,
   };
-  const command = new DeleteCommand(commandInput);
-  await dynamoDBClient.send(command);
+  await dynamoDBClient.delete(commandInput);
 }
 
 export const database = {
