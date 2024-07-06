@@ -1,4 +1,4 @@
-import { database, Table } from './database';
+import { database, DatabaseTable } from './database';
 import phMapData from './phMapData.json';
 
 function chunkArray(array, chunkSize) {
@@ -31,5 +31,5 @@ chunkedData.forEach((jsonData) => {
     });
   });
 
-  database.putBatch({ table: Table.phMap, data: preData });
+  database.putBatch({ tableName: DatabaseTable.phMap, data: preData });
 });

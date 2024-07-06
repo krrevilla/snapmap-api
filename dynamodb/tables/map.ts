@@ -2,10 +2,10 @@ import {
   CreateTableCommand,
   CreateTableCommandInput,
 } from '@aws-sdk/client-dynamodb';
-import { Table } from '../../src/services';
+import { DatabaseTable } from '../../src/services';
 
 const mapTableCommandInput: CreateTableCommandInput = {
-  TableName: Table.phMap,
+  TableName: DatabaseTable.phMap,
   AttributeDefinitions: [
     {
       AttributeName: 'id',

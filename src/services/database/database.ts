@@ -1,105 +1,71 @@
-import {
-  ScanCommandInput,
-  BatchWriteCommandInput,
-  PutCommandInput,
-  GetCommandInput,
-  UpdateCommandInput,
-  DeleteCommandInput,
-  QueryCommandInput,
-} from '@aws-sdk/lib-dynamodb';
-import { dynamoDBClient, dynamoDBAdapter } from '../../../dynamodb';
+import { dynamoDBAdapter, dynamoDBClient } from '../../../dynamodb';
+import type {
+  DatabaseGetParams,
+  DatabasePutBatchParams,
+  DatabasePutParams,
+  DatabaseQueryParams,
+  DatabaseRemoveParams,
+  DatabaseScanParams,
+  DatabaseUpdateParams,
+} from './types';
 
-export enum Table {
-  phMap = 'ph_map',
-  posts = 'posts',
-}
-
-type DatabaseParams = {
-  table: Table;
-};
-
-type ScanParams = DatabaseParams;
-const scan = async <T>({ table }: ScanParams): Promise<T> => {
-  const commandInput: ScanCommandInput = { TableName: table };
-  const response = await dynamoDBClient.scan(commandInput);
-
+const scan = async <T>(params: DatabaseScanParams): Promise<T> => {
+  const response = await dynamoDBClient.scan({ TableName: params.tableName });
   return (response.Items ?? []) as T;
 };
 
-type QueryParams = DatabaseParams & {
-  key: Record<string, any>;
-};
-const query = async <T>({ table, key }: QueryParams): Promise<T> => {
-  const expression = dynamoDBAdapter.convertDataToDynamoDBQueryExpression(key);
-  const commandInput: QueryCommandInput = {
-    TableName: table,
-    IndexName: 'user_id_index',
+const query = async <T>(params: DatabaseQueryParams): Promise<T> => {
+  const expression = dynamoDBAdapter.convertDataToDynamoDBQueryExpression({
+    data: params.key,
+  });
+  const response = await dynamoDBClient.query({
+    TableName: params.tableName,
+    IndexName: params.indexName,
     ...expression,
-  };
-  const response = await dynamoDBClient.query(commandInput);
-
+  });
   return response.Items as T;
 };
 
-type PutParams = DatabaseParams & {
-  data: Record<string, any>;
-};
-const put = async ({ table, data }: PutParams): Promise<void> => {
-  const commandInput: PutCommandInput = {
-    TableName: table,
-    Item: data,
-  };
-  await dynamoDBClient.put(commandInput);
+const put = async (params: DatabasePutParams): Promise<void> => {
+  await dynamoDBClient.put({
+    TableName: params.tableName,
+    Item: params.data,
+  });
 };
 
-type PutBatchParams = DatabaseParams & {
-  data: any[];
-};
-const putBatch = async ({ table, data }: PutBatchParams): Promise<void> => {
-  const commandInput: BatchWriteCommandInput = {
+const putBatch = async (params: DatabasePutBatchParams): Promise<void> => {
+  await dynamoDBClient.batchWrite({
     RequestItems: {
-      [table]: data,
+      [params.tableName]: params.data,
     },
-  };
-  await dynamoDBClient.batchWrite(commandInput);
+  });
 };
 
-type UpdateParams<K> = DatabaseParams & {
-  key: Record<string, any>;
-  data: K;
-};
-const update = async <T, K>({
-  table,
-  data,
-  key,
-}: UpdateParams<K>): Promise<T> => {
+const update = async <T>(params: DatabaseUpdateParams): Promise<T> => {
   try {
-    const expression =
-      dynamoDBAdapter.convertDataToDynamoDBUpdateExpression(data);
-    const commandInput: UpdateCommandInput = {
-      TableName: table,
-      Key: key,
-      ReturnValues: 'ALL_NEW',
-      ...expression,
-    };
-    const response = await dynamoDBClient.update(commandInput);
+    const expression = dynamoDBAdapter.convertDataToDynamoDBUpdateExpression({
+      data: params.data,
+      condition: params.condition,
+    });
 
+    const response = await dynamoDBClient.update({
+      TableName: params.tableName,
+      ReturnValues: 'ALL_NEW',
+      Key: params.key,
+      ...expression,
+    });
     return response.Attributes as T;
   } catch (error) {
+    // TODO: Handle Error
     console.log(error);
-    throw new Error('123');
   }
 };
 
-type GetParams = DatabaseParams & {
-  key: Record<string, any>;
-};
-async function get<T>({ table, key }: GetParams): Promise<T | undefined> {
-  const commandInput: GetCommandInput = {
-    TableName: table,
-    Key: key,
-  };
-  const response = await dynamoDBClient.get(commandInput);
+async function get<T>(params: DatabaseGetParams): Promise<T | undefined> {
+  const response = await dynamoDBClient.get({
+    TableName: params.tableName,
+    Key: params.key,
+  });
 
   if (!response.Item) {
     return undefined;
@@ -108,15 +74,30 @@ async function get<T>({ table, key }: GetParams): Promise<T | undefined> {
   return response.Item as T;
 }
 
-type RemoveParams = DatabaseParams & {
-  key: Record<string, any>;
-};
-async function remove({ table, key }: RemoveParams): Promise<void> {
-  const commandInput: DeleteCommandInput = {
-    TableName: table,
-    Key: key,
-  };
-  await dynamoDBClient.delete(commandInput);
+async function remove(params: DatabaseRemoveParams): Promise<void> {
+  try {
+    const expression = dynamoDBAdapter.convertDataToDynamoDBRemoveExpression({
+      condition: params.condition,
+    });
+
+    await dynamoDBClient.delete({
+      TableName: params.tableName,
+      Key: params.key,
+      ...expression,
+    });
+  } catch (error) {
+    // TODO: Handle Error
+    console.log(error);
+  }
+}
+
+export enum DatabaseTable {
+  phMap = 'ph_map',
+  posts = 'posts',
+}
+
+export enum DatabasePostsTableIndexKeys {
+  userId = 'user_id_index',
 }
 
 export const database = {

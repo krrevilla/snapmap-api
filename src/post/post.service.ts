@@ -2,8 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { Post } from './entities/post.entity';
-import { database, Table } from '../services';
-import { v4 } from 'uuid';
+import {
+  database,
+  DatabasePostsTableIndexKeys,
+  DatabaseTable,
+  uuid,
+} from '../services';
 
 type PostServiceUpdate = {
   id: string;
@@ -13,21 +17,23 @@ type PostServiceUpdate = {
 
 @Injectable()
 export class PostService {
+  private tableName = DatabaseTable.posts;
+
   async create(createPostDto: CreatePostDto, userId: string): Promise<Post> {
-    const id = v4();
     const post: Post = {
-      id,
+      id: uuid.generateUUID(),
       user_id: userId,
       ...createPostDto,
     };
-    await database.put({ table: Table.posts, data: post });
+    await database.put({ tableName: this.tableName, data: post });
 
     return post;
   }
 
   async findAll(userId: string): Promise<Post[]> {
     const posts = await database.query<Post[]>({
-      table: Table.posts,
+      tableName: this.tableName,
+      indexName: DatabasePostsTableIndexKeys.userId,
       key: { user_id: userId },
     });
 
@@ -35,18 +41,24 @@ export class PostService {
   }
 
   async findOne(id: string, userId: string): Promise<Post | undefined> {
-    const item = await database.get<Post>({
-      table: Table.posts,
+    const item = await database.query<Post>({
+      tableName: this.tableName,
       key: { id },
     });
+
+    // Prevent return if not owned by user
+    if (item?.user_id !== userId) {
+      return undefined;
+    }
 
     return item;
   }
 
   async update({ id, userId, data }: PostServiceUpdate): Promise<Post> {
-    const post = await database.update<Post, UpdatePostDto>({
-      table: Table.posts,
+    const post = await database.update<Post>({
+      tableName: this.tableName,
       key: { id },
+      condition: { user_id: userId },
       data: data,
     });
 
@@ -54,6 +66,10 @@ export class PostService {
   }
 
   async remove(id: string, userId: string): Promise<void> {
-    await database.remove({ table: Table.posts, key: { id } });
+    await database.remove({
+      tableName: this.tableName,
+      key: { id },
+      condition: { user_id: userId },
+    });
   }
 }

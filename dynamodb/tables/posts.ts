@@ -2,10 +2,10 @@ import {
   CreateTableCommand,
   CreateTableCommandInput,
 } from '@aws-sdk/client-dynamodb';
-import { Table } from '../../src/services';
+import { DatabaseTable, DatabasePostsTableIndexKeys } from '../../src/services';
 
 const postsTableCommandInput: CreateTableCommandInput = {
-  TableName: Table.posts,
+  TableName: DatabaseTable.posts,
   KeySchema: [
     {
       AttributeName: 'id',
@@ -28,7 +28,7 @@ const postsTableCommandInput: CreateTableCommandInput = {
   ],
   GlobalSecondaryIndexes: [
     {
-      IndexName: 'user_id_index',
+      IndexName: DatabasePostsTableIndexKeys.userId,
       KeySchema: [
         {
           AttributeName: 'user_id',
