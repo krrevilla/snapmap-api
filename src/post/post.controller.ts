@@ -9,8 +9,10 @@ import {
   Req,
   UseGuards,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PostService } from './post.service';
+import { PostUpdateServiceError, PostRemoveServiceError } from './post.error';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -22,8 +24,6 @@ export class PostController {
 
   @Post()
   create(@Body() createPostDto: CreatePostDto, @Req() req) {
-    console.log(createPostDto);
-
     return this.postService.create(createPostDto, req.user.sub);
   }
 
@@ -44,20 +44,34 @@ export class PostController {
   }
 
   @Patch(':id')
-  update(
+  async update(
     @Param('id') id: string,
     @Body() updatePostDto: UpdatePostDto,
     @Req() req,
   ) {
-    return this.postService.update({
-      id,
-      data: updatePostDto,
-      userId: req.user.sub,
-    });
+    try {
+      const updatedPost = await this.postService.update({
+        id,
+        data: updatePostDto,
+        userId: req.user.sub,
+      });
+
+      return updatedPost;
+    } catch (error) {
+      if (error instanceof PostUpdateServiceError) {
+        throw new BadRequestException(error.message);
+      }
+    }
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req) {
-    return this.postService.remove(id, req.user.sub);
+  async remove(@Param('id') id: string, @Req() req) {
+    try {
+      await this.postService.remove(id, req.user.sub);
+    } catch (error) {
+      if (error instanceof PostRemoveServiceError) {
+        throw new BadRequestException(error.message);
+      }
+    }
   }
 }

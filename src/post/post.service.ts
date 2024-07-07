@@ -6,8 +6,10 @@ import {
   database,
   DatabasePostsTableIndexKeys,
   DatabaseTable,
+  DatabaseValidationError,
   uuid,
 } from '../services';
+import { PostRemoveServiceError, PostUpdateServiceError } from './post.error';
 
 type PostServiceUpdate = {
   id: string;
@@ -41,35 +43,50 @@ export class PostService {
   }
 
   async findOne(id: string, userId: string): Promise<Post | undefined> {
-    const item = await database.query<Post>({
+    const items = await database.query<Post[]>({
       tableName: this.tableName,
       key: { id },
     });
+    const postItem = items[0] || undefined;
 
     // Prevent return if not owned by user
-    if (item?.user_id !== userId) {
+    if (postItem?.user_id !== userId) {
       return undefined;
     }
 
-    return item;
+    return postItem;
   }
 
   async update({ id, userId, data }: PostServiceUpdate): Promise<Post> {
-    const post = await database.update<Post>({
-      tableName: this.tableName,
-      key: { id },
-      condition: { user_id: userId },
-      data: data,
-    });
+    try {
+      const post = await database.update<Post>({
+        tableName: this.tableName,
+        key: { id },
+        condition: { user_id: userId },
+        data: data,
+      });
 
-    return post;
+      return post;
+    } catch (error) {
+      if (error instanceof DatabaseValidationError) {
+        throw new PostUpdateServiceError('Invalid Request');
+      }
+    }
   }
 
   async remove(id: string, userId: string): Promise<void> {
-    await database.remove({
-      tableName: this.tableName,
-      key: { id },
-      condition: { user_id: userId },
-    });
+    try {
+      await database.remove({
+        tableName: this.tableName,
+        key: { id },
+        condition: { user_id: userId },
+      });
+    } catch (error) {
+      if (error instanceof DatabaseValidationError) {
+        throw new PostRemoveServiceError('Invalid Request');
+      }
+
+      throw error;
+    }
   }
 }

@@ -1,3 +1,4 @@
+import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
 import { dynamoDBAdapter, dynamoDBClient } from '../../../dynamodb';
 import type {
   DatabaseGetParams,
@@ -8,6 +9,14 @@ import type {
   DatabaseScanParams,
   DatabaseUpdateParams,
 } from './types';
+
+export class DatabaseValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DatabaseValidationError';
+    this.message = message;
+  }
+}
 
 const scan = async <T>(params: DatabaseScanParams): Promise<T> => {
   const response = await dynamoDBClient.scan({ TableName: params.tableName });
@@ -56,8 +65,9 @@ const update = async <T>(params: DatabaseUpdateParams): Promise<T> => {
     });
     return response.Attributes as T;
   } catch (error) {
-    // TODO: Handle Error
-    console.log(error);
+    if (error instanceof ConditionalCheckFailedException) {
+      throw new DatabaseValidationError('Invalid Request');
+    }
   }
 };
 
@@ -86,8 +96,11 @@ async function remove(params: DatabaseRemoveParams): Promise<void> {
       ...expression,
     });
   } catch (error) {
-    // TODO: Handle Error
     console.log(error);
+
+    if (error instanceof ConditionalCheckFailedException) {
+      throw new DatabaseValidationError('Invalid Request');
+    }
   }
 }
 
