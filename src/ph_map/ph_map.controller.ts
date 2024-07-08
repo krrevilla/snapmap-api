@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { PhMapService } from './ph_map.service';
 import { AuthGuard } from '@nestjs/passport';
 
@@ -8,7 +8,7 @@ export class PhMapController {
   constructor(private readonly phMapService: PhMapService) {}
 
   @Get()
-  findAll() {
-    return this.phMapService.findAll();
+  findAll(@Req() req) {
+    return this.phMapService.findAll(req.user.sub);
   }
 }

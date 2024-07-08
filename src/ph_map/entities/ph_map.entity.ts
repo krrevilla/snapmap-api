@@ -3,3 +3,7 @@ export type PhMap = {
   name: string;
   svg_path: string;
 };
+
+export type UserPhMap = PhMap & {
+  hasPost: boolean;
+};
