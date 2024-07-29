@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { PhMapModule } from './ph_map/ph_map.module';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { PostModule } from './post/post.module';
+import { MapModule } from './map/map.module';
 
 @Module({
-  imports: [PhMapModule, AuthModule, UserModule, PostModule],
+  imports: [AuthModule, UserModule, PostModule, MapModule],
   controllers: [AppController],
   providers: [AppService],
 })

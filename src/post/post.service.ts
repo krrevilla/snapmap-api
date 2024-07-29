@@ -7,9 +7,11 @@ import {
   DatabasePostsTableIndexKeys,
   DatabaseTable,
   DatabaseValidationError,
+  imageStorage,
   uuid,
 } from '../services';
 import { PostRemoveServiceError, PostUpdateServiceError } from './post.error';
+import { Config } from '../config';
 
 type PostServiceUpdate = {
   id: string;
@@ -25,6 +27,8 @@ export class PostService {
     const post: Post = {
       id: uuid.generateUUID(),
       user_id: userId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
       ...createPostDto,
     };
     await database.put({ tableName: this.tableName, data: post });
@@ -57,13 +61,23 @@ export class PostService {
     return postItem;
   }
 
+  async findByMap(mapId: string, userId: string): Promise<Post[]> {
+    const items = await database.query<Post[]>({
+      tableName: this.tableName,
+      indexName: DatabasePostsTableIndexKeys.userId,
+      key: { user_id: userId },
+    });
+
+    return items.filter((item) => item.map_id === mapId);
+  }
+
   async update({ id, userId, data }: PostServiceUpdate): Promise<Post> {
     try {
       const post = await database.update<Post>({
         tableName: this.tableName,
         key: { id },
         condition: { user_id: userId },
-        data: data,
+        data: { ...data, updated_at: new Date().toISOString() },
       });
 
       return post;
@@ -88,5 +102,21 @@ export class PostService {
 
       throw error;
     }
+  }
+
+  async generatePreSignedURL({
+    type,
+    mimeType,
+  }: {
+    type: string;
+    mimeType: string;
+  }): Promise<string> {
+    const url = await imageStorage.createPresignedUrlWithClient({
+      key: `phImages/${uuid.generateUUID()}.${type}`,
+      bucket: Config.AWS_S3_BUCKET,
+      contentType: mimeType,
+    });
+
+    return url;
   }
 }

@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   Req,
-  UseGuards,
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
@@ -15,9 +14,7 @@ import { PostService } from './post.service';
 import { PostUpdateServiceError, PostRemoveServiceError } from './post.error';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
-import { AuthGuard } from '@nestjs/passport';
 
-@UseGuards(AuthGuard('jwt'))
 @Controller('post')
 export class PostController {
   constructor(private readonly postService: PostService) {}
@@ -30,6 +27,11 @@ export class PostController {
   @Get()
   findAll(@Req() req) {
     return this.postService.findAll(req.user.sub);
+  }
+
+  @Get('map/:id')
+  async findByMap(@Param('id') id: string, @Req() req) {
+    return this.postService.findByMap(id, req.user.sub);
   }
 
   @Get(':id')
@@ -72,6 +74,20 @@ export class PostController {
       if (error instanceof PostRemoveServiceError) {
         throw new BadRequestException(error.message);
       }
+    }
+  }
+
+  @Get('s3/presigned')
+  async generatePreSignedURL(@Req() req) {
+    try {
+      const url = this.postService.generatePreSignedURL({
+        type: req.query.type,
+        mimeType: req.query.mimeType,
+      });
+
+      return url;
+    } catch (error) {
+      throw new BadRequestException('Failed to generate presigned url');
     }
   }
 }

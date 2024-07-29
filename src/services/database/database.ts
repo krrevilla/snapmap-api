@@ -96,8 +96,6 @@ async function remove(params: DatabaseRemoveParams): Promise<void> {
       ...expression,
     });
   } catch (error) {
-    console.log(error);
-
     if (error instanceof ConditionalCheckFailedException) {
       throw new DatabaseValidationError('Invalid Request');
     }
