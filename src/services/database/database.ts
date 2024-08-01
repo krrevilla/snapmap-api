@@ -103,12 +103,12 @@ async function remove(params: DatabaseRemoveParams): Promise<void> {
 }
 
 export enum DatabaseTable {
-  phMap = 'ph_map',
   posts = 'posts',
 }
 
 export enum DatabasePostsTableIndexKeys {
   userId = 'user_id_index',
+  mapId = 'map_id_index',
 }
 
 export const database = {

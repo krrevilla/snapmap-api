@@ -1,15 +1,23 @@
 import { Injectable } from '@nestjs/common';
-import { database, DatabaseTable } from '../services';
-import { Map, UserMap } from './map.entity';
+import { MapCode, UserMap } from './map.entity';
 import { PostService } from '../post/post.service';
+import { codeMapping } from './data/mapping';
 
 @Injectable()
 export class MapService {
   constructor(private readonly postService: PostService) {}
-  private phMapTableName = DatabaseTable.phMap;
+  async findAll({
+    userId,
+    code,
+  }: {
+    userId?: string;
+    code: MapCode;
+  }): Promise<UserMap[] | null> {
+    const data = codeMapping[code];
 
-  async findAll(userId?: string): Promise<UserMap[]> {
-    const data = await database.scan<Map[]>({ tableName: this.phMapTableName });
+    if (!data) {
+      return null;
+    }
 
     if (!userId) {
       return data.map((map) => ({ ...map, has_post: false }));
@@ -29,11 +37,17 @@ export class MapService {
     return userMap;
   }
 
-  async findOne(id: string, userId?: string): Promise<UserMap | undefined> {
-    const data = await database.get<Map>({
-      tableName: this.phMapTableName,
-      key: { id },
-    });
+  async findOne({
+    id,
+    userId,
+    code,
+  }: {
+    id: string;
+    userId?: string;
+    code: MapCode;
+  }): Promise<UserMap | undefined> {
+    const map = codeMapping[code] ?? [];
+    const data = map.find((data) => data.id === id);
 
     if (!data) {
       return undefined;

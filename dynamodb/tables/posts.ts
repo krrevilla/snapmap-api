@@ -44,7 +44,7 @@ const postsTableCommandInput: CreateTableCommandInput = {
       },
     },
     {
-      IndexName: 'map_id_index',
+      IndexName: DatabasePostsTableIndexKeys.mapId,
       KeySchema: [
         {
           AttributeName: 'map_id',

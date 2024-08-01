@@ -1,7 +1,7 @@
 import { dynamoDBClient } from './dynamodb';
-import { mapTableCommand, postsTableCommand } from './tables';
+import { postsTableCommand } from './tables';
 
-const commands = [mapTableCommand, postsTableCommand];
+const commands = [postsTableCommand];
 
 const run = async () => {
   commands.forEach(async (command) => {
